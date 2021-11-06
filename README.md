@@ -1,3 +1,4 @@
+[![Node.js CI](https://github.com/amrHassanAbdallah/image-resizer/actions/workflows/node.js.yml/badge.svg)](https://github.com/amrHassanAbdallah/image-resizer/actions/workflows/node.js.yml)
 
 # Image resize
 

@@ -28,7 +28,7 @@ var multerStorage = multer.diskStorage({
         let currentFileName: string = file.originalname.substr(0, file.originalname.lastIndexOf('.'))
         const name = currentFileName.toLowerCase().split(' ').join('-')
         const ext = path.extname(file.originalname).substring(1)
-        console.log(ext, "extttttttttttt")
+
 
         cb(null, `${name}.${ext}`) //Appending extension
     }
@@ -101,11 +101,11 @@ imagesRouter.get('/:imageName', async (req: express.Request, res) => {
 imagesRouter.post('/', upload.single('image'), (req: express.Request, res) => {
     const file = req.file
     if (!file) {
-        const error = new Error('Please upload a file')
-        return res.status(400).json({ "hada": "" })
+        return res.status(400).json({ "message": "Please upload a file" })
     }
     return res.status(201).json({
-        "message": `image uploaded with the name '${req.file?.filename}' make sure to use it when quering the image.`
+        "message": `image uploaded.`,
+        "image_name":req.file?.filename
     })
 })
 
