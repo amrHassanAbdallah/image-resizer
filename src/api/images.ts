@@ -1,14 +1,13 @@
-
 import express from 'express'
 import path from 'path'
 import fs from 'fs';
 import mkdirp from 'mkdirp';
-import multer from 'multer';
-import sharp from 'sharp';
+
 const imagesRouter = express.Router()
 const uploadsLocation = "uploads"
 mkdirp.sync(uploadsLocation)
-
+import busboy, {Busboy} from "busboy";
+import formidable, {File} from "formidable";
 
 var mime: { [name: string]: string } = {
     "gif": 'image/gif',
@@ -20,27 +19,6 @@ var mime: { [name: string]: string } = {
 
 const dir = path.join(__dirname, "..", "..", uploadsLocation);
 
-var multerStorage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, uploadsLocation)
-    },
-    filename: function (req, file, cb) {
-        let currentFileName: string = file.originalname.substr(0, file.originalname.lastIndexOf('.'))
-        const name = currentFileName.toLowerCase().split(' ').join('-')
-        const ext = path.extname(file.originalname).substring(1)
-
-
-        cb(null, `${name}.${ext}`) //Appending extension
-    }
-})
-
-
-
-const upload = multer({
-    storage: multerStorage, limits: { fileSize: 10 * 1000 * 1000 }, fileFilter: (_req, file, cb) => {
-        checkFileType(file, cb);
-    }
-})
 
 function checkFileType(file: Express.Multer.File, cb: Function) {
     // Allowed ext
@@ -74,13 +52,13 @@ imagesRouter.get('/:imageName', async (req: express.Request, res) => {
     console.log(file)
     var type = mime[path.extname(file).slice(1)] || 'text/plain';
     //call the write endpoint with the new stream....
-/*     try {
-        if (fs.existsSync(path)) {
-          //file exists
-        }
-      } catch(err) {
-        console.error(err)
-      } */
+    /*     try {
+            if (fs.existsSync(path)) {
+              //file exists
+            }
+          } catch(err) {
+            console.error(err)
+          } */
 
 
     var s = fs.createReadStream(file);
@@ -96,20 +74,69 @@ imagesRouter.get('/:imageName', async (req: express.Request, res) => {
     });
 
 
-
 })
-imagesRouter.post('/', upload.single('image'), (req: express.Request, res) => {
-    const file = req.file
+
+const isFileValid = (file: formidable.File | formidable.File[]) => {
+    if (Array.isArray(file)) {
+        return false
+    } else {
+        const type = file.mimetype || "";
+        let supportedTypes: { [name: string]: string } = {}
+        Object.keys(mime).forEach(key => {
+            supportedTypes[mime[key]] = key
+        })
+
+        return supportedTypes[type] != undefined;
+    }
+};
+
+//todo refactor
+imagesRouter.post('/', (req: express.Request, res) => {
+    const form = formidable({multiples: true});
+    form.parse(req, (err, fields, files) => {
+        if (err) {
+            return;
+        }
+        if (files.image) {
+            const file = files.image
+            if (Array.isArray(file)) {
+                return res.status(400).json({
+                    message: "Only one file allowed",
+                });
+            } else {
+                let isValid = isFileValid(file)
+                if (!isValid) {
+                    // throes error if file isn't valid
+                    return res.status(400).json({
+                        message: "The file type is not a valid type",
+                    });
+                }
+                let fileName = file.originalFilename ? file.originalFilename : ""
+                fileName = encodeURIComponent(fileName.replace(/\s/g, "-"));
+                try {
+                    // renames the file in the directory
+                    fs.renameSync(file.filepath, path.join(uploadsLocation, fileName));
+                } catch (error) {
+                    console.log(error);
+                }
+
+                return res.status(201).json({
+                    "message": `image uploaded.`,
+                    "image_name": fileName
+                })
+            }
+
+
+        } else {
+            return res.status(400).json({"message": "Please upload a file"})
+        }
+    });
+    /*const file = req.file
     if (!file) {
         return res.status(400).json({ "message": "Please upload a file" })
-    }
-    return res.status(201).json({
-        "message": `image uploaded.`,
-        "image_name":req.file?.filename
-    })
+    }*/
+
 })
-
-
 
 
 export default imagesRouter
