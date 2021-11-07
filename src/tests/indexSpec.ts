@@ -21,6 +21,24 @@ describe("Test image viewing",()=>{
             .expect(200)
             .end((error) => (error) ? done.fail(error) : done());
     });
+    it('should resize the image height', function (done) {
+        request
+            .get('/api/images/'+testReadImageName+"?height=500")
+            .expect(200)
+            .end((error) => (error) ? done.fail(error) : done());
+    });
+    it('should resize the image width', function (done) {
+        request
+            .get('/api/images/'+testReadImageName+"?width=500")
+            .expect(200)
+            .end((error) => (error) ? done.fail(error) : done());
+    });
+    it('should resize the image width & height', function (done) {
+        request
+            .get('/api/images/'+testReadImageName+"?width=200&height=200")
+            .expect(200)
+            .end((error) => (error) ? done.fail(error) : done());
+    });
     it('should return 404 if the image not there', function (done) {
         request
             .get('/api/images/hamda.png')
@@ -43,27 +61,6 @@ describe('Test image storing endpoint responses', () => {
                     })
                     .end((error) => (error) ? done.fail(error) : done());
             });
-                /*return request
-                    .post('/api/images/')
-                    // Attach the file with key 'file' which is corresponding to your endpoint setting.
-                    .attach('image', testImageLocation)
-                    .then((res) => {
-                        expect(res.statusCode).toEqual(201);
-                        expect(message).toBe('image uploaded.');
-                        // store file data for following tests
-                        //testFilePath = image_name;
-                    })
-                    .catch(err => console.log(err));
-        done()*
-         })/
-
-
-   /* afterAll(function() {
-        if (testFilePath != ""){
-            console.log("insider the tear down",testFilePath)
-            fs.unlinkSync(path.join("uploads",testFilePath))
-        }
-    });*/
 
 
     afterAll(function() {

@@ -2,11 +2,12 @@ import express from 'express'
 import path from 'path'
 import fs from 'fs';
 import mkdirp from 'mkdirp';
+import sharp from "sharp";
 
 const imagesRouter = express.Router()
 const uploadsLocation = "uploads"
 mkdirp.sync(uploadsLocation)
-import busboy, {Busboy} from "busboy";
+mkdirp.sync(getThumbDirectory())
 import formidable, {File} from "formidable";
 
 var mime: { [name: string]: string } = {
@@ -16,52 +17,53 @@ var mime: { [name: string]: string } = {
     "svg": 'image/svg+xml',
 };
 
-
-const dir = path.join(__dirname, "..", "..", uploadsLocation);
-
-
-function checkFileType(file: Express.Multer.File, cb: Function) {
-    // Allowed ext
-    const filetypes = /jpeg|jpg|png|gif/;
-    // Check ext
-    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-    // Check mime
-    const mimetype = filetypes.test(file.mimetype);
-
-    if (mimetype && extname) {
-        return cb(null, true);
-    } else {
-        cb(null, false);
-        return cb(new Error('Only .png, .jpg and .jpeg format allowed!'));
-    }
-}
-
-
 imagesRouter.get('/:imageName', async (req: express.Request, res) => {
+
     const imageName = req.params.imageName
-    let isFound: boolean = false
-    if (typeof imageName == "undefined" || imageName == "") {
-        return res.status(400).json({
-            "message": "imageName param is required"
-        })
-    }
-    let file = path.join(dir, req.path.replace(/\/$/, '/index.html'));
-    if (file.indexOf(dir + path.sep) !== 0) {
+    const imageLocation = path.join(uploadsLocation, imageName);
+    if (imageName.indexOf(path.sep) >= 0) {
         return res.status(403).end('Forbidden');
     }
-    console.log(file)
-    var type = mime[path.extname(file).slice(1)] || 'text/plain';
-    //call the write endpoint with the new stream....
-    /*     try {
-            if (fs.existsSync(path)) {
-              //file exists
+    let thumbPath = ""
+    const isFound = await fs.existsSync(imageLocation)
+    if (!isFound || imageName == "") {
+        return res.status(404).json({
+            "message": "image not found"
+        })
+    }
+
+    if (req.query.height || req.query.width) {
+        let fileMeta = await sharp(imageLocation).metadata();
+        const thumbFilePath = path.join(getThumbDirectory(), imageName)
+        const isThumbFound = await fs.existsSync(thumbFilePath)
+        let height: number | undefined = parseInt(<string>req.query.height);
+        let width: number | undefined = parseInt(<string>req.query.width);
+        if(isThumbFound) {
+            fileMeta = await sharp(thumbFilePath).metadata();
+        }
+
+        thumbPath = thumbFilePath
+        if (!isNaN(height) && height != fileMeta.height || !isNaN(width) && width != fileMeta.width) {
+            if (isNaN(width)) {
+                width = fileMeta.width
             }
-          } catch(err) {
-            console.error(err)
-          } */
+            if (isNaN(height)) {
+                height = fileMeta.height
+            }
+            try {
+                await sharp(imageLocation).resize(width, height).toFile(thumbFilePath)
+
+            } catch (e) {
+
+            }
+
+        }
+    }
 
 
-    var s = fs.createReadStream(file);
+    let file = thumbPath != "" ? thumbPath : imageLocation
+    let type = mime[path.extname(imageName).slice(1)] || 'text/plain';
+    let s = fs.createReadStream(file);
     s.on('open', function () {
         res.set('Content-Type', type);
         s.pipe(res);
@@ -90,7 +92,9 @@ const isFileValid = (file: formidable.File | formidable.File[]) => {
     }
 };
 
-//todo refactor
+function getThumbDirectory() {
+    return path.join(uploadsLocation, "thumb")
+}
 imagesRouter.post('/', (req: express.Request, res) => {
     const form = formidable({multiples: true});
     form.parse(req, (err, fields, files) => {

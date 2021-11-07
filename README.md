@@ -26,19 +26,25 @@ npm run test
 
 ## Usage
 
-* Upload image
+1. Upload image
+    
+    `POST /api/images`
+    
+    ```bash
+    curl --location --request POST 'localhost:3000/api/images' \
+    --form 'image=@"your-image.png"'
+    ```
 
-`POST /api/images`
+1. Access image
 
-```bash
-curl --location --request POST 'localhost:3000/api/images' \
---form 'image=@"your-image.png"'
-```
-
-* Access image
-
-`GET /api/images/your-image.png`
-```bash
-curl --location --request GET 'localhost:3000/api/images/your-image.png'
-```
-
+    `GET /api/images/your-image.png`
+    ```bash
+    curl --location --request GET 'localhost:3000/api/images/your-image.png'
+    ```
+    
+ 1. Resize the image
+ 
+     `GET /api/images/your-image.png?height=500&width=500`
+     ```bash
+     curl --location --request GET 'localhost:3000/api/images/your-image.png?height=500&width=500'
+     ```
