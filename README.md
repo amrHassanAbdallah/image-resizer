@@ -48,3 +48,16 @@ npm run test
      ```bash
      curl --location --request GET 'localhost:3000/api/images/your-image.png?height=500&width=500'
      ```
+
+### To test
+After running the server using
+```bash
+npm run start
+```
+
+You can use the test image called `t_test_image.png` to access the get endpoint and play with the height&width.
+
+**Ex**
+```rest
+ curl --location --request GET 'localhost:3000/api/images/t_test_image.png?height=500&width=500'
+```
