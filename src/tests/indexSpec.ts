@@ -1,19 +1,29 @@
 import supertest from 'supertest';
-import {app} from '../index';
+import {app} from '../app';
 import fs from 'fs';
 import path from "path";
+import config from '../config';
+
 const testImageLocation = 'test_image.png'
-const uploadFolderName = "uploads"
 
 const request = supertest(app);
-let testFilePath:string = "";
+let filesToBeRemoved:string[] = [];
 describe("Test image viewing",()=>{
     const testReadImageName = "read_"+testImageLocation
     beforeAll(()=>{
-        fs.createReadStream(testImageLocation).pipe(fs.createWriteStream(path.join(uploadFolderName,testReadImageName)));
+        fs.createReadStream(testImageLocation).pipe(fs.createWriteStream(path.join(config.uploads,testReadImageName)));
     })
-    afterAll(()=>{
-        fs.unlinkSync(path.join(uploadFolderName,testReadImageName))
+    afterAll(async ()=>{
+        filesToBeRemoved.push(path.join(config.uploads,testReadImageName))
+        if (filesToBeRemoved.length){
+            for (const file of filesToBeRemoved) {
+                const isFound = await fs.existsSync(file)
+                if (isFound){
+                    fs.unlinkSync(file)
+                }
+
+            }
+        }
     })
     it('should view the image if exist', function (done) {
         request
@@ -24,13 +34,13 @@ describe("Test image viewing",()=>{
     it('should resize the image height', function (done) {
         request
             .get('/api/images/'+testReadImageName+"?height=500")
-            .expect(200)
+            .expect(400)
             .end((error) => (error) ? done.fail(error) : done());
     });
-    it('should resize the image width', function (done) {
+    it('should not resize the image width', function (done) {
         request
             .get('/api/images/'+testReadImageName+"?width=500")
-            .expect(200)
+            .expect(400)
             .end((error) => (error) ? done.fail(error) : done());
     });
     it('should resize the image width & height', function (done) {
@@ -38,6 +48,7 @@ describe("Test image viewing",()=>{
             .get('/api/images/'+testReadImageName+"?width=200&height=200")
             .expect(200)
             .end((error) => (error) ? done.fail(error) : done());
+        filesToBeRemoved.push(path.join(config.thumbnails,`${200}_${200+testReadImageName}`))
     });
     it('should return 404 if the image not there', function (done) {
         request
@@ -57,16 +68,14 @@ describe('Test image storing endpoint responses', () => {
                     .expect(201)
                     .expect((response)=>{
                         expect(response.body.message).toEqual("image uploaded.")
-                        testFilePath = response.body.image_name
+                        filesToBeRemoved = response.body.image_name
                     })
                     .end((error) => (error) ? done.fail(error) : done());
             });
 
 
     afterAll(function() {
-        if (testFilePath != ""){
-            console.log("inside the tear down",testFilePath)
-            fs.unlinkSync(path.join("uploads",testFilePath))
-        }
+            console.log("inside the tear down",filesToBeRemoved)
+            fs.unlinkSync(path.join("uploads",testImageLocation))
     })
 });
