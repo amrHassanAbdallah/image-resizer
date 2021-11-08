@@ -1,17 +1,15 @@
-import { Container } from 'typedi';
-import LoggerInstance from './logger';
+import { Container } from "typedi";
+import LoggerInstance from "./logger";
 
 export default () => {
-    try {
+  try {
+    Container.set("logger", LoggerInstance);
 
+    LoggerInstance.info("✌️ all good");
 
-        Container.set('logger', LoggerInstance);
-
-        LoggerInstance.info('✌️ all good');
-
-        return  ;
-    } catch (e) {
-        LoggerInstance.error('🔥 Error on dependency injector loader: %o', e);
-        throw e;
-    }
+    return;
+  } catch (e) {
+    LoggerInstance.error("🔥 Error on dependency injector loader: %o", e);
+    throw e;
+  }
 };

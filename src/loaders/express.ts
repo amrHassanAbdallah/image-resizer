@@ -1,51 +1,50 @@
-import express from 'express';
-import cors from 'cors';
-import { OpticMiddleware } from '@useoptic/express-middleware';
-import routes from '../api';
-import config from '../config';
+import express from "express";
+import cors from "cors";
+import { OpticMiddleware } from "@useoptic/express-middleware";
+import routes from "../api";
+import config from "../config";
 import exceptionCatcher from "../api/middlewares/exception-failure-middleware";
 export default ({ app }: { app: express.Application }) => {
-    /**
-     * Health Check endpoints
-     * @TODO Explain why they are here
-     */
-    app.get('/status', (req, res) => {
-        res.status(200).end();
-    });
-    app.head('/status', (req, res) => {
-        res.status(200).end();
-    });
+  /**
+   * Health Check endpoints
+   * @TODO Explain why they are here
+   */
+  app.get("/status", (req, res) => {
+    res.status(200).end();
+  });
+  app.head("/status", (req, res) => {
+    res.status(200).end();
+  });
 
-    // Useful if you're behind a reverse proxy (Heroku, Bluemix, AWS ELB, Nginx, etc)
-    // It shows the real origin IP in the heroku or Cloudwatch logs
-    app.enable('trust proxy');
+  // Useful if you're behind a reverse proxy (Heroku, Bluemix, AWS ELB, Nginx, etc)
+  // It shows the real origin IP in the heroku or Cloudwatch logs
+  app.enable("trust proxy");
 
-    // The magic package that prevents frontend developers going nuts
-    // Alternate description:
-    // Enable Cross Origin Resource Sharing to all origins by default
-    app.use(cors());
+  // The magic package that prevents frontend developers going nuts
+  // Alternate description:
+  // Enable Cross Origin Resource Sharing to all origins by default
+  app.use(cors());
 
+  // Transforms the raw string of req.body into json
+  app.use(express.json());
+  // Load API routes
+  app.use(config.api.prefix, routes());
 
-    // Transforms the raw string of req.body into json
-    app.use(express.json());
-    // Load API routes
-    app.use(config.api.prefix, routes());
+  // API Documentation
+  app.use(
+    OpticMiddleware({
+      enabled: process.env.NODE_ENV !== "production",
+    })
+  );
 
-    // API Documentation
-    app.use(OpticMiddleware({
-        enabled: process.env.NODE_ENV !== 'production',
-    }));
+  /// catch 404 and forward to error handler
+  app.use((req, res, next) => {
+    const err = new Error("Not Found");
+    err["status"] = 404;
+    next(err);
+  });
 
-    /// catch 404 and forward to error handler
-    app.use((req, res, next) => {
-        const err = new Error('Not Found');
-        err['status'] = 404;
-        next(err);
-    });
+  app.use(exceptionCatcher);
 
-
-    app.use(exceptionCatcher)
-
-    return app;
-
+  return app;
 };

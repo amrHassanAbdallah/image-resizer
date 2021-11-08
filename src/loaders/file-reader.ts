@@ -1,8 +1,7 @@
 import mkdirp from "mkdirp";
-import config from '../config';
+import config from "../config";
 
 export default () => {
-
-    mkdirp.sync(config.uploads)
-    mkdirp.sync(config.thumbnails)
-}
+  mkdirp.sync(config.uploads);
+  mkdirp.sync(config.thumbnails);
+};
