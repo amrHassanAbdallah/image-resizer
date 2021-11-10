@@ -6,7 +6,8 @@ import { Container } from "typedi";
 import { Logger } from "winston";
 
 import formidable from "formidable";
-import ImageShaper from "../../services/image-shaper";
+import ImageShaper from "../../services/imageShaper";
+import FileNotFoundErr from "../../errors/FileNotFoundErr";
 
 const mime: { [name: string]: string } = {
   gif: "image/gif",
@@ -35,7 +36,6 @@ export default (app: Router) => {
   route.get("/:imageName", async (req: Request, res, next) => {
     const logger: Logger = Container.get("logger");
     const imageName = req.params.imageName;
-    let imageLocation = path.join(config.uploads, imageName);
     if (imageName.indexOf(path.sep) >= 0) {
       return res.status(403).end("Forbidden");
     }
@@ -51,26 +51,29 @@ export default (app: Router) => {
       }
     }
 
-    const isFound = await fs.existsSync(imageLocation);
-    if (!isFound || imageName == "") {
+    if ( imageName == "") {
       return res.status(404).json({
         message: "image not found",
       });
     }
 
-    if (req.query.height) {
+    let imageLocation = ""
       try {
         const imageShaper = Container.get(ImageShaper);
         imageLocation = await imageShaper.Resize(
           imageName,
-          parseInt(<string>req.query.height),
-          parseInt(<string>req.query.width)
+          isNaN(parseInt(<string>req.query.height))?null:parseInt(<string>req.query.height),
+          isNaN(parseInt(<string>req.query.width))?null:parseInt(<string>req.query.width)
         );
       } catch (e) {
+        if (e instanceof FileNotFoundErr){
+          return res.status(e.statusCode).json({
+            message:e.message
+          })
+        }
         logger.error("🔥 error: %o", e);
         return next(e);
       }
-    }
 
     let file = imageLocation;
     let type = mime[path.extname(imageName).slice(1)] || "text/plain";

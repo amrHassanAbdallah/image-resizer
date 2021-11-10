@@ -55,7 +55,7 @@ describe("Test image viewing", () => {
   });
   it("should return 404 if the image not there", function (done) {
     request
-      .get("/api/images/hamda.png")
+      .get("/api/images/image_not_exist.png")
       .expect(404)
       .end((error) => (error ? done.fail(error) : done()));
   });
